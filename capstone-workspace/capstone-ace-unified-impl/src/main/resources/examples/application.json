@@ -1,0 +1,15 @@
+{
+	"organisationId": "blahblah",
+	"applicationId": 1234,
+	"applicationName": "payload.name",
+	"applicationOwner": "owner",
+	"ownerEmail": "mail@mail.com",
+	"daysOld": 123,
+	"expireConf": 1234,
+	"warnConf": 1234,
+	"warnDiff": 1234,
+	"expireDiff": 1234,
+	"appWillExpire": false,
+	"appHasExpired": false,
+	"deleteContracts": false
+}

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="anypoint-apis-loginImpl" doc:id="6584cc9e-d816-477a-b954-c06dec37c502" >
+		<http:request method="POST" doc:name="login request" doc:id="582e11a6-59ea-4428-b7b3-81c8550aaef2" config-ref="api-platform-http-config" path='#[p("ap.login.url")]' outputMimeType="application/json" />
+	</sub-flow>
+	<sub-flow name="get-org-apps" doc:id="b6d0e81c-af85-4f79-b6ea-7abbb9a3be35" >
+		<http:request method="GET" doc:name="fetch applications" doc:id="e915897f-7536-4480-abd6-70f278d55285" config-ref="api-platform-http-config" path="#[p('ap.apiplatform.api.url') ++ p(&quot;fetch.apps.url&quot;)]" >
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.accessToken default ''),
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"org-id" : vars.currentOrg.organisationId
+}]]]></http:uri-params>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"targetAdminSite" : "true"
+}]]]></http:query-params>
+		</http:request>
+	</sub-flow>
+	<sub-flow name="get-app-contracts" doc:id="765b80bd-3652-4c34-ba42-94e4cd4e145a" >
+		<http:request method="GET" doc:name="fetch app contracts" doc:id="ea6d90b1-2354-4e69-90c7-6e563ee9b7dc" config-ref="api-platform-http-config" path="#[p('ap.apiplatform.api.url') ++ p(&quot;fetch.app.contracts&quot;)]" >
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.accessToken default ''),
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"org-id" : vars.currentApp.organisationId,
+	"app-id" : vars.currentApp.applicationId
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
+</mule>

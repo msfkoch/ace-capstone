@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="response-contracts_type" format="json">
+      <types:shape format="weave" example="examples/get_app_contracts-response.json"><![CDATA[%dw 2.0
+
+type response_contracts_type = Array<{|  audit: {|    created: {| date: String |},     updated: {| date: String |}  |},   organizationId: String,   id: Number {"typeId": "int"},   status: String,   tier: {|    audit: {|      created: {|  |},       updated: {|  |}    |},     id: Number {"typeId": "int"},     name: String,     description: Null,     limits: Array<{|      visible: Boolean,       timePeriodInMilliseconds: Number {"typeId": "int"},       maximumRequests: Number {"typeId": "int"}    |}>
+  |}, 
+  requestedTier: Null, 
+  apiVersion: {|
+    audit: {|
+      created: {|  |}, 
+      updated: {|  |}
+    |}, 
+    organizationId: String, 
+    id: Number {"typeId": "int"}, 
+    apiId: Number {"typeId": "int"}, 
+    name: String, 
+    instanceLabel: Null, 
+    productVersion: String, 
+    deprecated: Boolean, 
+    environmentId: String, 
+    api: {|
+      audit: {|
+        created: {|  |}, 
+        updated: {|  |}
+      |}, 
+      organizationId: String, 
+      id: Number {"typeId": "int"}, 
+      name: String, 
+      exchangeAssetName: String
+    |}
+  |}, 
+  groupInstance: Null
+|}> {"example": "[{\\\"audit\\\":{\\\"created\\\":{\\\"date\\\":\\\"2020-07-06T14:48:01.196Z\\\"},\\\"updated\\\":{\\\"date\\\":\\\"2020-07-06T14:48:49.282Z\\\"}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":1057222,\\\"status\\\":\\\"APPROVED\\\",\\\"tier\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"id\\\":394133,\\\"name\\\":\\\"Basic\\\",\\\"description\\\":null,\\\"limits\\\":[{\\\"visible\\\":true,\\\"timePeriodInMilliseconds\\\":1000,\\\"maximumRequests\\\":1}]},\\\"requestedTier\\\":null,\\\"apiVersion\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":16241302,\\\"apiId\\\":211408766,\\\"name\\\":\\\"v1:16241302\\\",\\\"instanceLabel\\\":null,\\\"productVersion\\\":\\\"v1\\\",\\\"deprecated\\\":false,\\\"environmentId\\\":\\\"0c9e856a-7a83-4654-bfda-bccad38ae142\\\",\\\"api\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":211408766,\\\"name\\\":\\\"groupId:5933124b-b230-4b4e-91d4-176e68b1474f:assetId:capstone-sample-app-api\\\",\\\"exchangeAssetName\\\":\\\"Capstone Sample App API\\\"}},\\\"groupInstance\\\":null}]"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#6fa7dac0-e822-47fc-a13a-ed4d03f84b69">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="response-contracts_type"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

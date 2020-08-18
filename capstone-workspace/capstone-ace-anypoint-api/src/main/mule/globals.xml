@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="5c2f75a8-4f9f-4133-9c85-d91816f45545" file="config.properties" />
+    <http:request-config name="api-platform-http-config" doc:name="HTTP Request configuration" doc:id="f0c5de78-0ba8-4364-a1b2-65ee54e5c6f5" enableCookies="false">
+        <http:request-connection host="${ap.host}" port="${ap.port}" protocol="HTTPS" usePersistentConnections="false"/>
+    </http:request-config>
+	<api-gateway:autodiscovery apiId="16285249" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="c6baecfc-e182-4f33-ab3b-7f0083b7b7e2" flowRef="anypoint-system-api-main" />
+</mule>

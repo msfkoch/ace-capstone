@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    <http:request-config name="api-platform-http-config" doc:name="HTTP Request configuration" doc:id="f0c5de78-0ba8-4364-a1b2-65ee54e5c6f5" enableCookies="false">
+        <http:request-connection host="${ap.host}" port="${ap.port}" protocol="HTTPS" usePersistentConnections="false"/>
+    </http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="7e6f8f72-fdf9-400b-bec2-bc93328fd5dc" file="config.properties" />
+	<os:object-store name="caducator-object-store" doc:name="Object store" doc:id="4c881264-c4c9-4e5e-a297-1e35aa892240" />
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="4f143e9f-fc10-4b18-9f42-60ae019addce" from="${smtp.from}">
+		<email:smtps-connection host="${smtp.host}" user="${smtp.user}" password="${smtp.password}" >
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</email:smtps-connection>
+	</email:smtp-config>
+</mule>

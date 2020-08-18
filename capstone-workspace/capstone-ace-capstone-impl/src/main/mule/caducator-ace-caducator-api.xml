@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:capstone-ace-caducator-state-api="http://www.mulesoft.org/schema/mule/capstone-ace-caducator-state-api" xmlns:capstone-ace-caducator-configuration-api="http://www.mulesoft.org/schema/mule/capstone-ace-caducator-configuration-api" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:capstone-ace-anypoint-system-api="http://www.mulesoft.org/schema/mule/capstone-ace-anypoint-system-api" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/capstone-ace-anypoint-system-api http://www.mulesoft.org/schema/mule/capstone-ace-anypoint-system-api/current/mule-capstone-ace-anypoint-system-api.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/capstone-ace-caducator-configuration-api http://www.mulesoft.org/schema/mule/capstone-ace-caducator-configuration-api/current/mule-capstone-ace-caducator-configuration-api.xsd
+http://www.mulesoft.org/schema/mule/capstone-ace-caducator-state-api http://www.mulesoft.org/schema/mule/capstone-ace-caducator-state-api/current/mule-capstone-ace-caducator-state-api.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+    <http:listener-config name="caducator-ace-caducator-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="caducator-ace-caducator-api-config" api="resource::5933124b-b230-4b4e-91d4-176e68b1474f:caducator-api:1.0.1:raml:zip:caducator-ace-caducator-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <capstone-ace-anypoint-system-api:config name="Anypoint_System_API_Config" doc:name="Capstone ACE - Anypoint System API Config" doc:id="cde5172a-2ee0-49f9-a2f6-9a7a943894ab" property_host="capstone-ace-anypoint-api.us-e2.cloudhub.io" property_port="80" property_basePath="/api" property_protocol="HTTP" />
+	<configuration-properties doc:name="Configuration properties" doc:id="261355fe-6e82-4aac-be39-24c211a7f653" file="config.properties" />
+	<capstone-ace-caducator-configuration-api:config name="Configuration_API_Config" doc:name="Capstone ACE - Caducator Configuration API Config" doc:id="fc0cbca6-3cd3-42dd-8933-5b4d34a3d888" property_host="capstone-ace-config.us-e2.cloudhub.io" property_port="80" property_basePath="/api" property_protocol="HTTP" />
+	<capstone-ace-caducator-state-api:config name="Caducator_State_API_Config" doc:name="Capstone ACE - Caducator State API Config" doc:id="36fbfb20-cfc5-48a2-8b79-b263f921ef75" property_host="capstone-ace-state.us-e2.cloudhub.io" property_port="80" property_basePath="/api" property_protocol="HTTP" />
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="623ccbbc-445c-4777-8895-a188afc15f81" >
+		<email:smtps-connection host="${smtp.host}" user="${smtp.user}" password="${smtp.password}" >
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</email:smtps-connection>
+	</email:smtp-config>
+	<sub-flow name="invalidate-contracts-subFlow" doc:id="bcb66233-d456-4d75-af12-e94354d55341" >
+		<logger level="INFO" doc:name="Logger" doc:id="a202605d-ed9f-4eaa-b3bf-ce03c1ec1e16" message="#[payload]" />
+		<capstone-ace-anypoint-system-api:create-revoke-by-org-id-env-id-api-id-contract-id doc:name="revoke application contract" doc:id="1c0acc77-8984-41f8-afd3-5de4e484cabb" org-id="#[vars.currentOrg.organisationId]" env-id="#[payload.apiVersion.environmentId]" api-id="#[payload.apiVersion.id]" contract-id="#[payload.id]" config-ref="Anypoint_System_API_Config" authorization="#[vars.accessToken]"/>
+		<choice doc:name="choice" doc:id="f63d4d20-aabd-4aee-9cb2-0e03de5b7478" >
+			<when expression="#[vars.currentApp.deleteContracts]" >
+				<capstone-ace-anypoint-system-api:delete-contract-by-org-id-env-id-api-id-contract-id doc:name="delete application contract" doc:id="06700dd4-a665-4a90-9808-d13d10b13202" config-ref="Anypoint_System_API_Config" org-id="#[vars.currentApp.organisationId]" env-id="#[payload.apiVersion.environmentId]" api-id="#[payload.apiVersion.id]" contract-id="#[payload.id]" authorization="#[vars.accessToken]"/>
+				<logger level="INFO" doc:name="log deletion" doc:id="2948164e-678f-44ad-a2df-65bbdfcd2e96" message='#["contract " ++ payload.id ++ " has been deleted"]' />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="not deleting contract" doc:id="9da19859-3b98-49b5-9772-c78d9b20fe0e" message="Not deleting contract"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="app-has-expired-subFlow" doc:id="8ccc7f83-54e6-4863-8882-9bd61e6b7a9a" >
+		<logger level="INFO" doc:name="log" doc:id="faf544ad-3564-4cb2-b0e0-1a6cfde63c91" message="App has expired" />
+		<capstone-ace-anypoint-system-api:get-contracts-by-org-id-app-id doc:name="Get contracts by org id app id" doc:id="836a4d86-852f-438e-8512-0987e344c927" config-ref="Anypoint_System_API_Config" org-id="#[vars.currentOrg.organisationId]" app-id="#[vars.currentApp.applicationId]" authorization="#[vars.accessToken]"/>
+		<foreach doc:name="For Each" doc:id="5155dfde-53f3-47c2-82cb-69e60fae57d4" collection="#[payload.contracts]">
+			<try doc:name="Try" doc:id="d0c50bd0-fda2-4116-9f1a-ae27ec546fad" >
+				<flow-ref doc:name="invalidate app contracts" doc:id="a467fbc2-7ff8-4f6f-94b5-39e8548755e2" name="invalidate-contracts-subFlow" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="b541ada4-8313-4761-b7da-386d048d605e" >
+						<logger level="INFO" doc:name="log error" doc:id="97b00dae-86a3-45e9-a1a4-c74e3dd87a24" message="#[error]"/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+			<try doc:name="Try" doc:id="88d6ee66-ade3-4fa9-b5b5-72ea9ef16dce" >
+				<capstone-ace-caducator-state-api:delete-warning-sents-by-org-id-app-id doc:name="Delete warning sents by org id app id" doc:id="839d73f6-af7c-4a5c-aa8f-56642a2f8060" config-ref="Caducator_State_API_Config" org-id="#[vars.currentApp.organisationId]" app-id="#[vars.currentApp.applicationId]" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="422fcfe2-174a-4a85-b5cd-5638c067223d" >
+						<logger level="INFO" doc:name="log and continue" doc:id="325b32d2-9238-4d16-a523-03ba89ec511c" message="#[error]"/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+			<capstone-ace-anypoint-system-api:get-resets-by-org-id-app-id doc:name="reset application credentials" doc:id="7cb11cd8-b561-4523-83b3-c1ed55dcac84" config-ref="Anypoint_System_API_Config" org-id="#[vars.currentApp.organisationId]" app-id="#[vars.currentApp.applicationId]" authorization="#[vars.accessToken]"/>
+			<try doc:name="Try" doc:id="c523f290-30d6-4a49-9579-214cc3d1b68f" >
+				<email:send doc:name="Notify" doc:id="32b6c88f-d46f-431d-b703-4238ef6583ce" config-ref="Email_SMTP" fromAddress="#[vars.currentOrg.contactEmail]" subject="#[&quot;Application '&quot; ++ vars.currentApp.applicationName ++ &quot;' has expired&quot;]" >
+					<email:to-addresses >
+						<email:to-address value="#[vars.currentApp.ownerEmail]" />
+					</email:to-addresses>
+					<email:body contentType="text/html" encoding="UTF-8" contentTransferEncoding="quoted-printable" >
+						<email:content ><![CDATA[#[output application/java
+var app = vars.currentApp.applicationName
+var deleteContracts = vars.currentOrg.deleteContracts
+var contactEmail = vars.currentOrg.contactEmail
+---
+("<h1>Application '$app' has expired</h1>"
+++ "<p>Credentials for application '$app' have been reset." 
+++ 
+(
+	if(deleteContracts) " and existing contracts have been deleted. You will need to update your deployments and re-create your API contracts." 
+	else " and existing contracts have been revoked. You will need to update your deployments with the new credentials and" ++
+		 " ask your contracts to be restored by the administrator at $contactEmail."    
+)
+++ "</p>"
+++ "<p>Thanks for your interest in our APIs</p>")]]]></email:content>
+					</email:body>
+				</email:send>
+				<capstone-ace-caducator-state-api:create-warning-sent-by-org-id-app-id-value doc:name="reset warning sent" doc:id="856b01c9-7a1d-4b4b-8f4f-c811b379a67d" config-ref="Caducator_State_API_Config" org-id="#[vars.currentOrg.organisationId]" app-id="#[vars.currentApp.applicationId]" value="false"/>
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ceb4500d-06c7-4954-93e4-722a51f1ea5c" >
+						<logger level="INFO" doc:name="log error" doc:id="497186bb-13a3-4f63-a612-4a7e6d438ffa" message="#[error]" />
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+	</sub-flow>
+	<sub-flow name="app-warning-subFlow" doc:id="604db06b-c8f0-4e6f-a221-d767df2f91f7">
+		<logger level="INFO" doc:name="Logger" doc:id="cf18f788-ca42-435f-a7de-368ebd8cd989" />
+		<capstone-ace-caducator-state-api:get-warning-sents-by-org-id-app-id doc:name="Get warning sents by org id app id" doc:id="ab5b229f-a667-4a43-9bdd-b3a0f0d16e61" config-ref="Caducator_State_API_Config" org-id="#[vars.currentOrg.organisationId]" app-id="#[vars.currentApp.applicationId]" target="warningSent" targetValue="#[payload.value]"/>
+		<choice doc:name="Choice" doc:id="a10fad1e-2a83-45ff-914e-735b78cd15b0" >
+			<when expression="#[!vars.warningSent]">
+				<logger level="INFO" doc:name="warning will be sent" doc:id="4f471a06-6d54-45f8-9adf-3db985d21769" message="#[payload]" />
+				<try doc:name="Try" doc:id="70569a50-3059-4307-a4d3-9376afb3437a" >
+					<email:send doc:name="Send" doc:id="438867f6-5599-4744-ab39-8223828c4c5e" config-ref="Email_SMTP" fromAddress="#[vars.currentOrg.contactEmail]" subject="#[&quot;Application '&quot; ++ (vars.currentApp.applicationName default &quot;&quot;) ++ &quot;' will expire soon&quot;]">
+						<email:to-addresses >
+							<email:to-address value="#[payload.ownerEmail]" />
+						</email:to-addresses>
+						<email:body contentType="text/html" encoding="UTF-8" contentTransferEncoding="quoted-printable" >
+							<email:content ><![CDATA[#[output application/java
+---
+"<h1>Application '" ++ (vars.currentApp.applicationName default "") ++ "' will expire soon</h1>" ++
+"<p>The application '" ++ (vars.currentApp.applicationName default "") ++ "' will expire soon. Please create a new application
+and update your deployments.</p>" ++
+"<p>The current application contracts will be revoked in " ++ abs(vars.currentApp.expireDiff default 0) ++ " days and credentials will be reset.</p>" ++
+"<p>Thanks for your interest in our APIs</p>"]]]></email:content>
+						</email:body>
+					</email:send>
+					<capstone-ace-caducator-state-api:create-warning-sent-by-org-id-app-id-value doc:name="Create warning sent by org id app id value" doc:id="9a19565d-bc2f-4b2f-bc71-1078457992fa" config-ref="Caducator_State_API_Config" org-id="#[vars.currentOrg.organisationId]" app-id="#[vars.currentApp.applicationId]" value="true"/>
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c257ad75-96d1-4873-8d84-6adb98c88087" >
+							<logger level="INFO" doc:name="log error" doc:id="6434ca98-9fcc-4f5b-ad8c-ce4394113cce" message="#[error]"/>
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="warning already sent" doc:id="3f0d506f-eba0-4eb0-b403-1d8adb078144" message="warning already sent"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="apps-subflow" doc:id="914e35a2-6a74-462b-afc3-129f7f3922cb" >
+		<capstone-ace-anypoint-system-api:get-applications-by-org-id doc:name="Get applications by org id" doc:id="4e29bb31-76c9-4040-be06-f76483bd6018" config-ref="Anypoint_System_API_Config" org-id="#[vars.currentOrg.organisationId]" authorization="#[vars.accessToken]" />
+		<foreach doc:name="For Each" doc:id="8cdf3363-1b21-4187-97ea-9eeae4dc84f9" collection="#[payload.applications]">
+				<set-variable value="#[payload]" doc:name="store app in var" doc:id="89fe96b8-d1f1-4bc6-96ee-ebd0ebe19086" variableName="application" />
+				<ee:transform doc:name="calculate dates" doc:id="46524fe8-09dc-4d7f-8ec4-0a6d8876f11c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var createdDate = payload.audit.created.date as DateTime
+var dateNow = now()
+var daysOld = (dateNow - createdDate).days
+var orgConfigDays = vars.currentOrg.expiryDays default 0
+var orgConfigWarnDays = vars.currentOrg.warnDays default 0
+---
+{
+	organisationId: vars.currentOrg.organisationId,
+	applicationId: payload.id,
+	applicationName: payload.name,
+	applicationOwner: (payload.owners[0].firstName default "") ++ " " ++ (payload.owners[0].lastName default ""),
+	ownerEmail: payload.owners[0].email,
+	daysOld: daysOld,
+	expireConf: orgConfigDays,
+	warnConf: orgConfigDays - orgConfigWarnDays,
+	warnDiff: daysOld - (orgConfigDays - orgConfigWarnDays),
+	expireDiff: daysOld - orgConfigDays,
+	appWillExpire: daysOld >= orgConfigDays - orgConfigWarnDays,
+	appHasExpired: daysOld >= orgConfigDays,
+	deleteContracts: vars.currentOrg.deleteContracts
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[payload]" doc:name="set app status" doc:id="3e280a63-f7c2-45b1-8143-72f01383fe2a" variableName="currentApp" />
+				<logger level="INFO" doc:name="output app info" doc:id="b4759c6a-26e8-4089-a0b4-c9432f22b7ec" message="#[payload]" />
+				<choice doc:name="check app state" doc:id="6af4c251-23cf-49a0-80cd-07dc98f7f8b7">
+					<when expression="#[vars.currentApp.appHasExpired]">
+					<flow-ref doc:name="Flow Reference" doc:id="d07b7087-b134-458a-803d-8d1bdee47544" name="app-has-expired-subFlow" />
+					</when>
+				<when expression="#[vars.currentApp.appWillExpire]" >
+					<flow-ref doc:name="Flow Reference" doc:id="8d579112-53ec-4248-a8c5-ab23b771503d" name="app-warning-subFlow" />
+				</when>
+				<otherwise>
+						<logger level="INFO" doc:name="All is well with this app" doc:id="69146317-248d-45ba-95ef-a1698a0ee569" message="nothing to do" />
+					</otherwise>
+				</choice>
+			</foreach>
+	</sub-flow>
+	<sub-flow name="start-main-flow" doc:id="793de317-0299-445e-80df-108af320646d" >
+		<capstone-ace-caducator-configuration-api:get-configs doc:name="Get configs" doc:id="0d28d998-e455-4cc4-888a-6a6f2f015d16" config-ref="Configuration_API_Config" />
+		<logger level="INFO" doc:name="log payload" doc:id="1b94d70f-3529-4e1a-93c1-88d18f3823df" message="#[payload]" />
+		<foreach doc:name="For Each" doc:id="b060e234-5235-457a-99cf-907b789dfcff" collection="#[payload.organisations]">
+			<set-variable value="#[payload]" doc:name="set curent org" doc:id="d8501427-c6e1-43aa-a050-8832e6732181" variableName="currentOrg" />
+			<flow-ref doc:name="check organisation apps" doc:id="9e9812a7-4dc0-46d4-aef8-5ccc32bf3c6d" name="apps-subflow" />
+		</foreach>
+	</sub-flow>
+	<flow name="caducator-ace-caducator-api-main">
+        <http:listener config-ref="caducator-ace-caducator-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="caducator-ace-caducator-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="caducator-ace-caducator-api-console">
+        <http:listener config-ref="caducator-ace-caducator-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="caducator-ace-caducator-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\start:caducator-ace-caducator-api-config">
+        <logger level="INFO" message="get:\start:caducator-ace-caducator-api-config" />
+		<ee:transform doc:name="set payload" doc:id="444896ed-b3fe-4361-bb60-7974195b6b86" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	username: p("ap.user"),
+	password: p("ap.password")	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<capstone-ace-anypoint-system-api:login-to-exchange doc:name="Login to Exchange" doc:id="15264072-90c3-426d-9d99-ed9d0d7a6088" config-ref="Anypoint_System_API_Config" access-control-allow-origin="*" access-control-allow-headers="*"/>
+		<set-variable value="#[payload.access_token]" doc:name="Set Variable" doc:id="3b565fbd-8dbe-4d7e-9462-d2c9a737048f" variableName="accessToken"/>
+		<flow-ref doc:name="Flow Reference" doc:id="4dae0af7-a78a-4687-8e9d-17e9538a2c79" name="start-main-flow" />
+		<capstone-ace-anypoint-system-api:get-resets-by-token doc:name="Get resets by token" doc:id="ccb0f4af-070d-42c8-9d11-a8f3acf46250" config-ref="Anypoint_System_API_Config" token="#[vars.accessToken]" authorization="#[vars.accessToken]"/>
+    </flow>
+</mule>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <sub-flow name="delete-config" doc:id="22bd46a1-d1df-4fc2-9c9a-66bffb042dce" >
+		<os:retrieve doc:name="get organisation ids" doc:id="b26fc47b-a079-4566-9a7b-2b3990c6fcbf" key="caducator-organisation-ids" target="organisations">
+			<os:default-value><![CDATA[#[[] as Array<String>]]]></os:default-value>
+		</os:retrieve>
+		<set-variable value='#[%dw 2.0 output application/java --- vars.organisations as Array&lt;String&gt; contains(payload default "")]' doc:name="array contains org id" doc:id="d5132eb9-3dc5-4928-90ad-2db4e018be60" variableName="containsOrgId" />
+		<choice doc:name="choice" doc:id="c0db448f-c87a-49bf-bd3e-87f89b858a68">
+			<when expression="#[vars.containsOrgId]">
+				<logger level="INFO" doc:name="yes" doc:id="1b585d1a-3707-437b-9443-4378264e35d0" />
+				<try doc:name="Try" doc:id="b36b2144-4167-4f48-901b-f03d23a27b15">
+					<os:remove doc:name="Remove" doc:id="92eb1618-e508-45cf-85f2-945f7e54717d" key="#[&quot;caducator-config-&quot; ++ attributes.uriParams.'organisation-id']" />
+					<error-handler>
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="0027108e-6398-4493-9b17-b22e4c7dbe12">
+							<logger level="INFO" doc:name="could not delete organisation" doc:id="ef360bbb-93a8-4f84-9a08-97cf8b406c2a" message="#[error]" />
+						</on-error-continue>
+					</error-handler>
+				</try>
+				<set-variable value="#[vars.organisations as Array&lt;String&gt; filter ((item, index) -&gt; item != attributes.uriParams.'organisation-id')]" doc:name="remove org id" doc:id="453a095f-5f63-49aa-a301-d6fa32fa9e6e" variableName="organisations" />
+				<os:store doc:name="store orgs" doc:id="9b30b276-7999-4389-8346-e1ae29bdb1a3" key="caducator-organisation-ids">
+					<os:value><![CDATA[#[vars.organisations]]]></os:value>
+				</os:store>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="no" doc:id="5c4137b7-bd6a-4fab-8210-5e82a991eb40" />
+			</otherwise>
+		</choice>
+		<logger level="INFO" message="delete:\config\(organisation-id):caducator-config-api-config" />
+	</sub-flow>
+	<sub-flow name="create-config" doc:id="412f2d4c-52ea-406c-a997-136db3ed9226" >
+		<set-variable value="#[payload.configuration]" doc:name="save config" doc:id="e6482a74-5f7a-4324-87c6-132e0684ece9" variableName="config" />
+		<os:retrieve doc:name="get organisation ids" doc:id="2e6ca632-e09f-4156-9ba1-a40a4d18e5fa" key="caducator-organisation-ids" target="organisations">
+            <os:default-value><![CDATA[#[[] as Array<String>]]]></os:default-value>
+        </os:retrieve>
+		<set-variable value="#[%dw 2.0 output application/java --- vars.organisations as Array&lt;String&gt; contains(vars.config.organisationId)]" doc:name="array contains org id" doc:id="5c2e03ef-2289-4d93-aff4-b93aa9923adc" variableName="containsOrgId" />
+		<choice doc:name="Choice" doc:id="5359467f-624f-4f1b-a4a3-a6e4f1b3cc8e">
+            <when expression="#[vars.containsOrgId]">
+                <logger level="INFO" doc:name="yes" doc:id="e5994eae-7eb0-4f66-a666-815b2202a575" />
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="no" doc:id="b0eed943-0a6c-4551-af36-89f0be0a37be" />
+                <set-payload value="#[%dw 2.0 output application/java --- (vars.organisations as Array&lt;String&gt;) + payload.configuration.organisationId]" doc:name="set organisations" doc:id="1ed9c009-c5eb-4744-aca6-2cadee423c34" />
+                <os:store doc:name="store organisations" doc:id="bc8bd29d-2cc1-4964-9cfc-83297b6902b9" key="caducator-organisation-ids" />
+            </otherwise>
+        </choice>
+		<os:store doc:name="Store" doc:id="26121284-b628-4004-869f-5a6294a29dcd" key="#[&quot;caducator-config-&quot; ++ vars.config.organisationId]">
+            <os:value><![CDATA[#[vars.config]]]></os:value>
+        </os:store>
+		<logger level="INFO" message="post:\config:application\json:caducator-config-api-config" />
+	</sub-flow>
+	<sub-flow name="get-configs" doc:id="84c9020d-6366-4d21-b7bf-897d66660fde" >
+		<logger level="INFO" message="get:\config:caducator-config-api-config" />
+		<set-variable value="#[%dw 2.0 output application/java --- {  &quot;organisations&quot;: [] }]" doc:name="set result" doc:id="4e43e022-4981-4bbb-8e57-016671bf1c3a" variableName="result" />
+		<os:retrieve doc:name="get organisation ids" doc:id="661c7d92-c433-4e88-b773-0ac73afb8efe" key="#[&quot;caducator-organisation-ids&quot;]" target="organisations">
+            <os:default-value><![CDATA[#[[] as Array<String>]]]></os:default-value>
+        </os:retrieve>
+		<foreach doc:name="For Each" doc:id="fd703dde-e929-4497-8d16-49711331e3e7" collection="#[vars.organisations]">
+            <os:retrieve doc:name="retrieve config" doc:id="b35c6fdf-b085-46de-aeb2-e737a5d12b3e" key="#[&quot;caducator-config-&quot; ++ payload as String]" />
+            <set-variable value="#[%dw 2.0 output application/java --- {  organisations: vars.result.organisations + payload }]" doc:name="append config" doc:id="8c83b69e-6868-4d1f-b47c-032204c230b7" variableName="result" />
+            <logger level="INFO" doc:name="Logger" doc:id="af42777b-d7f4-43bb-ad36-6994e0367f08" message="#[%dw 2.0 output application/json --- vars.organisations]" />
+        </foreach>
+		<set-payload value="#[vars.result]" doc:name="Set Payload" doc:id="55bc34b6-f7c0-4f20-ba77-65ef2e792d50" />
+		<ee:transform doc:name="Transform Message" doc:id="2460d378-0b41-404e-99c5-53f11c816987">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+	</sub-flow>
+</mule>

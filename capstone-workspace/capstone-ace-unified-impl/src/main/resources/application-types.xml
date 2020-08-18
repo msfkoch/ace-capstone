@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="application_type" format="json">
+      <types:shape format="weave" example="examples/application.json"><![CDATA[%dw 2.0
+
+type application_type = {|
+  organisationId: String, 
+  applicationId: Number {"typeId": "int"}, 
+  applicationName: String, 
+  applicationOwner: String, 
+  ownerEmail: String, 
+  daysOld: Number {"typeId": "int"}, 
+  expireConf: Number {"typeId": "int"}, 
+  warnConf: Number {"typeId": "int"}, 
+  warnDiff: Number {"typeId": "int"}, 
+  expireDiff: Number {"typeId": "int"}, 
+  appWillExpire: Boolean, 
+  appHasExpired: Boolean, 
+  deleteContracts: Boolean
+|} {"example": "{\\\"organisationId\\\":\\\"blahblah\\\",\\\"applicationId\\\":1234,\\\"applicationName\\\":\\\"payload.name\\\",\\\"applicationOwner\\\":\\\"owner\\\",\\\"ownerEmail\\\":\\\"mail@mail.com\\\",\\\"daysOld\\\":123,\\\"expireConf\\\":1234,\\\"warnConf\\\":1234,\\\"warnDiff\\\":1234,\\\"expireDiff\\\":1234,\\\"appWillExpire\\\":false,\\\"appHasExpired\\\":false,\\\"deleteContracts\\\":false}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="get_applications_type" format="json">
+      <types:shape format="weave" example="examples/get_applications-response.json"><![CDATA[%dw 2.0
+
+type get_applications_type = {|
+  applications: Array<{|    audit: {|      created: {| date: String |},       updated: {|  |}    |},     masterOrganizationId: String,     id: Number {"typeId": "int"},     name: String,     description: String,     coreServicesId: String,     url: String,     clientId: String,     clientSecret: String,     grantTypes: Array<Any>, 
+    redirectUri: Array<String>, 
+    owner: String, 
+    email: String, 
+    owners: Array<{|      id: String,       createdAt: String,       updatedAt: String,       organizationId: String,       firstName: String,       lastName: String,       email: String,       phoneNumber: String,       idprovider_id: String,       username: String,       enabled: Boolean,       deleted: Boolean,       lastLogin: String,       "type": String,       roles: Array<String>
+    |}>
+  |}>, 
+  total: Number {"typeId": "int"}
+|} {"example": "{\\\"applications\\\":[{\\\"audit\\\":{\\\"created\\\":{\\\"date\\\":\\\"2020-05-04T14:20:29.408Z\\\"},\\\"updated\\\":{}},\\\"masterOrganizationId\\\":\\\"9e1a0ae6-a5c8-410c-919c-0610e996a560\\\",\\\"id\\\":418216,\\\"name\\\":\\\"Exch App v2\\\",\\\"description\\\":\\\"description\\\",\\\"coreServicesId\\\":\\\"731f8e4cb4504d3fb02da47282c3ddbc\\\",\\\"url\\\":\\\"mycompany.url\\\",\\\"clientId\\\":\\\"731f8e4cb4504d3fb02da47282c3ddbc\\\",\\\"clientSecret\\\":\\\"391b9Cb779Cd471Ca9E5f7564638331e\\\",\\\"grantTypes\\\":[],\\\"redirectUri\\\":[\\\"https:\\/\\/mycompany\\/callback\\\"],\\\"owner\\\":\\\"Fernando Koch\\\",\\\"email\\\":\\\"fkoch@mulesoft.com\\\",\\\"owners\\\":[{\\\"id\\\":\\\"46074311-a34a-468f-9118-ce2a76f6d7f0\\\",\\\"createdAt\\\":\\\"2019-09-09T07:23:18.496Z\\\",\\\"updatedAt\\\":\\\"2020-08-18T10:02:07.990Z\\\",\\\"organizationId\\\":\\\"9e1a0ae6-a5c8-410c-919c-0610e996a560\\\",\\\"firstName\\\":\\\"Fernando\\\",\\\"lastName\\\":\\\"Koch\\\",\\\"email\\\":\\\"fkoch@mulesoft.com\\\",\\\"phoneNumber\\\":\\\"+44 7810 831740\\\",\\\"idprovider_id\\\":\\\"mulesoft\\\",\\\"username\\\":\\\"fkoch\\\",\\\"enabled\\\":true,\\\"deleted\\\":false,\\\"lastLogin\\\":\\\"2020-08-18T10:02:00.000Z\\\",\\\"type\\\":\\\"host\\\",\\\"roles\\\":[\\\"cc43e20e-c04b-4c86-a29e-49ac7e7f8b58\\\"]}]},{\\\"audit\\\":{\\\"created\\\":{\\\"date\\\":\\\"2020-07-06T15:06:46.284Z\\\"},\\\"updated\\\":{}},\\\"masterOrganizationId\\\":\\\"9e1a0ae6-a5c8-410c-919c-0610e996a560\\\",\\\"id\\\":462351,\\\"name\\\":\\\"Capstone Sample App v1\\\",\\\"description\\\":\\\"description\\\",\\\"coreServicesId\\\":\\\"fe37cccef024483a9d90c654a40c2e50\\\",\\\"url\\\":\\\"mycompany.url\\\",\\\"clientId\\\":\\\"fe37cccef024483a9d90c654a40c2e50\\\",\\\"clientSecret\\\":\\\"F563fe005230459CA3Ad8a9b660493e6\\\",\\\"grantTypes\\\":[],\\\"redirectUri\\\":[\\\"https:\\/\\/mycompany\\/callback\\\"],\\\"owner\\\":\\\"Fernando Koch\\\",\\\"email\\\":\\\"fkoch@mulesoft.com\\\",\\\"owners\\\":[{\\\"id\\\":\\\"46074311-a34a-468f-9118-ce2a76f6d7f0\\\",\\\"createdAt\\\":\\\"2019-09-09T07:23:18.496Z\\\",\\\"updatedAt\\\":\\\"2020-08-18T10:02:07.990Z\\\",\\\"organizationId\\\":\\\"9e1a0ae6-a5c8-410c-919c-0610e996a560\\\",\\\"firstName\\\":\\\"Fernando\\\",\\\"lastName\\\":\\\"Koch\\\",\\\"email\\\":\\\"fkoch@mulesoft.com\\\",\\\"phoneNumber\\\":\\\"+44 7810 831740\\\",\\\"idprovider_id\\\":\\\"mulesoft\\\",\\\"username\\\":\\\"fkoch\\\",\\\"enabled\\\":true,\\\"deleted\\\":false,\\\"lastLogin\\\":\\\"2020-08-18T10:02:00.000Z\\\",\\\"type\\\":\\\"host\\\",\\\"roles\\\":[\\\"cc43e20e-c04b-4c86-a29e-49ac7e7f8b58\\\"]}]}],\\\"total\\\":2}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="get_contracts_type" format="json">
+      <types:shape format="weave" example="examples/get_app_contracts-response.json"><![CDATA[%dw 2.0
+
+type get_contracts_type = Array<{|  audit: {|    created: {| date: String |},     updated: {| date: String |}  |},   organizationId: String,   id: Number {"typeId": "int"},   status: String,   tier: {|    audit: {|      created: {|  |},       updated: {|  |}    |},     id: Number {"typeId": "int"},     name: String,     description: Null,     limits: Array<{|      visible: Boolean,       timePeriodInMilliseconds: Number {"typeId": "int"},       maximumRequests: Number {"typeId": "int"}    |}>
+  |}, 
+  requestedTier: Null, 
+  apiVersion: {|
+    audit: {|
+      created: {|  |}, 
+      updated: {|  |}
+    |}, 
+    organizationId: String, 
+    id: Number {"typeId": "int"}, 
+    apiId: Number {"typeId": "int"}, 
+    name: String, 
+    instanceLabel: Null, 
+    productVersion: String, 
+    deprecated: Boolean, 
+    environmentId: String, 
+    api: {|
+      audit: {|
+        created: {|  |}, 
+        updated: {|  |}
+      |}, 
+      organizationId: String, 
+      id: Number {"typeId": "int"}, 
+      name: String, 
+      exchangeAssetName: String
+    |}
+  |}, 
+  groupInstance: Null
+|}> {"example": "[{\\\"audit\\\":{\\\"created\\\":{\\\"date\\\":\\\"2020-07-17T08:43:37.786Z\\\"},\\\"updated\\\":{\\\"date\\\":\\\"2020-07-17T08:43:59.990Z\\\"}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":1082011,\\\"status\\\":\\\"APPROVED\\\",\\\"tier\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"id\\\":401518,\\\"name\\\":\\\"Silver\\\",\\\"description\\\":null,\\\"limits\\\":[{\\\"visible\\\":true,\\\"timePeriodInMilliseconds\\\":1000,\\\"maximumRequests\\\":1}]},\\\"requestedTier\\\":null,\\\"apiVersion\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":16262234,\\\"apiId\\\":211422440,\\\"name\\\":\\\"v1:16262234\\\",\\\"instanceLabel\\\":null,\\\"productVersion\\\":\\\"v1\\\",\\\"deprecated\\\":false,\\\"environmentId\\\":\\\"0c9e856a-7a83-4654-bfda-bccad38ae142\\\",\\\"api\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":211422440,\\\"name\\\":\\\"groupId:5933124b-b230-4b4e-91d4-176e68b1474f:assetId:capstone-sample-app-ii\\\",\\\"exchangeAssetName\\\":\\\"Capstone Sample App II\\\"}},\\\"groupInstance\\\":null},{\\\"audit\\\":{\\\"created\\\":{\\\"date\\\":\\\"2020-07-07T15:29:21.694Z\\\"},\\\"updated\\\":{\\\"date\\\":\\\"2020-07-07T15:29:49.210Z\\\"}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":1059745,\\\"status\\\":\\\"APPROVED\\\",\\\"tier\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"id\\\":394873,\\\"name\\\":\\\"Standard\\\",\\\"description\\\":null,\\\"limits\\\":[{\\\"visible\\\":true,\\\"timePeriodInMilliseconds\\\":1000,\\\"maximumRequests\\\":10}]},\\\"requestedTier\\\":null,\\\"apiVersion\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":16241302,\\\"apiId\\\":211408766,\\\"name\\\":\\\"v1:16241302\\\",\\\"instanceLabel\\\":null,\\\"productVersion\\\":\\\"v1\\\",\\\"deprecated\\\":false,\\\"environmentId\\\":\\\"0c9e856a-7a83-4654-bfda-bccad38ae142\\\",\\\"api\\\":{\\\"audit\\\":{\\\"created\\\":{},\\\"updated\\\":{}},\\\"organizationId\\\":\\\"5933124b-b230-4b4e-91d4-176e68b1474f\\\",\\\"id\\\":211408766,\\\"name\\\":\\\"groupId:5933124b-b230-4b4e-91d4-176e68b1474f:assetId:capstone-sample-app-api\\\",\\\"exchangeAssetName\\\":\\\"Capstone Sample App API\\\"}},\\\"groupInstance\\\":null}]"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#876fbc53-646a-4ce6-9064-1bb5c61f690b">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="get_applications_type"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#6c032d3c-7536-4d67-8591-3aacf59afdd2">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="get_contracts_type"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#68948ead-3587-4e99-882e-9773155b0ef4">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="application_type"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

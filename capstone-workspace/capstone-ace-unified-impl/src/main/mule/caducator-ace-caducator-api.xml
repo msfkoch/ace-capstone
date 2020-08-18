@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="caducator-ace-caducator-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="caducator-ace-caducator-api-config" api="resource::5933124b-b230-4b4e-91d4-176e68b1474f:caducator-api:1.0.3:raml:zip:caducator-ace-caducator-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <sub-flow name="invalidate-contracts" doc:id="af3b95a8-3e8b-400d-a263-57980227171e" >
+		<logger level="INFO" doc:name="Logger" doc:id="3b484896-8dd8-4eec-a6cd-05f165b925ac" message="#[payload]" />
+		<http:request method="POST" doc:name="revoke contract" doc:id="edf2dca7-2156-4044-a4fb-541d0926ce2b" config-ref="api-platform-http-config" path="#[p(&quot;ap.apimanager.api.url&quot;) ++ p(&quot;revoke.contract.url&quot;)]">
+            <http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.accessToken default ''),
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+            <http:uri-params><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	"org-id" : vars.currentApp.organisationId,
+	"env-id": payload.apiVersion.environmentId,
+    "api-id": payload.apiVersion.id,
+    "contract-id": payload.id
+}]]]></http:uri-params>
+        </http:request>
+		<choice doc:name="Choice" doc:id="909f3c36-6a6f-4c7e-9993-0ae7a5a56e9d">
+            <when expression="#[vars.currentApp.deleteContracts]">
+                <http:request method="DELETE" doc:name="delete contract" doc:id="3ccb0d74-c54b-4dc7-9ae0-4ca40622eefb" config-ref="api-platform-http-config" path="#[p(&quot;ap.apimanager.api.url&quot;) ++ p(&quot;delete.contract.url&quot;)]">
+                    <http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.accessToken default ''),
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+                    <http:uri-params><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	"org-id" : vars.currentApp.organisationId,
+	"env-id": payload.apiVersion.environmentId,
+    "api-id": payload.apiVersion.id,
+    "contract-id": payload.id
+}]]]></http:uri-params>
+                </http:request>
+                <logger level="INFO" doc:name="Logger" doc:id="1f9ecc89-45c2-4e94-a967-4a08218c1784" message="#[&quot;contract &quot; ++ payload.id ++ &quot; has been deleted&quot;]" />
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="not deleting contract" doc:id="f44f2fa5-2f95-40e9-9683-1fcbb171beef" />
+            </otherwise>
+        </choice>
+	</sub-flow>
+	<sub-flow name="invalidate-app"
+		doc:id="ce1eea48-0800-431d-bb30-ae602d30ffb8">
+		<logger level="INFO" doc:name="app has expired"
+			doc:id="6ecfaf88-c14f-4354-baad-8b65fe6ccb33"
+			message="app has expired" />
+		<flow-ref doc:name="get app contracts"
+			doc:id="6c032d3c-7536-4d67-8591-3aacf59afdd2"
+			name="get-app-contracts" target="contracts" />
+		<foreach doc:name="for each contract"
+			doc:id="2ccf4889-8a07-44b8-b35f-78ba71ce51c9"
+			collection="#[vars.contracts]">
+			<try doc:name="Try" doc:id="a98a8872-a819-4cb7-9c06-21e033555b0a">
+				<flow-ref doc:name="invalidate contracts"
+					doc:id="ea22ee5a-a9c1-490a-bd38-02c885064a6e"
+					name="invalidate-contracts" />
+				<error-handler>
+					<on-error-continue enableNotifications="true"
+						logException="true" doc:name="On Error Continue"
+						doc:id="4eb09b64-be55-4cd5-91fb-b25e150d5503">
+						<logger level="INFO" doc:name="log error"
+							doc:id="53e03d63-72de-4226-a76e-8fa9de14f4de" message="#[error]" />
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+		<try doc:name="Try" doc:id="b7b1b147-d4e6-4c9c-9fbe-e06611b34ec9">
+			<os:remove doc:name="remove warning flag"
+				doc:id="30df283a-38f6-43d2-a510-8413ff0a340e"
+				key='#[(vars.currentOrg.organisationId default "") ++ (vars.currentApp.applicationId default "") ++ "-warning-sent"]'
+				objectStore="caducator-object-store" />
+			<error-handler>
+				<on-error-continue enableNotifications="true"
+					logException="true" doc:name="On Error Continue"
+					doc:id="3ab61828-d4a8-4700-a109-468cb0860995">
+					<logger level="INFO" doc:name="log error"
+						doc:id="5b964b2e-1ab8-4b43-b175-3711ea6e20f6" message="#[error]" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<http:request method="POST"
+			doc:name="reset app credentials"
+			doc:id="8275a521-be16-4bed-b15a-2e75fd80e78e"
+			config-ref="api-platform-http-config"
+			path="#[p(&quot;ap.apiplatform.api.url&quot;) ++ p(&quot;reset.credentials.url&quot;)]">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.accessToken default ''),
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	"org-id" : vars.currentOrg.organisationId,
+    "app-id": vars.currentApp.applicationId
+}]]]></http:uri-params>
+		</http:request>
+		<try doc:name="Try" doc:id="02638c8d-6cee-4d6d-9794-5a3a27efcfda">
+			<email:send doc:name="Notify"
+				doc:id="372dc95e-6ec3-4a5a-ad09-f45b1eab8088"
+				config-ref="Email_SMTP" subject="#[&quot;Application '&quot; ++ vars.currentApp.applicationName ++ &quot;' has expired&quot;]"
+				fromAddress="#[vars.currentOrg.contactEmail]">
+				<email:to-addresses>
+					<email:to-address
+						value="#[vars.currentApp.ownerEmail]" />
+				</email:to-addresses>
+				<email:body contentType="text/html" encoding="UTF-8" contentTransferEncoding="quoted-printable">
+					<email:content><![CDATA[#[output application/java
+var app = vars.currentApp.applicationName
+var deleteContracts = vars.currentOrg.deleteContracts
+var contactEmail = vars.currentOrg.contactEmail
+---
+("<h1>Application '$app' has expired</h1>"
+++ "<p>Credentials for application '$app' have been reset." 
+++ 
+(
+	if(deleteContracts) " and existing contracts have been deleted. You will need to update your deployments and re-create your API contracts." 
+	else " and existing contracts have been revoked. You will need to update your deployments with the new credentials and" ++
+		 " ask your contracts to be restored by the administrator at $contactEmail."    
+)
+++ "</p>"
+++ "<p>Thanks for your interest in our APIs</p>")]]]></email:content>
+				</email:body>
+			</email:send>
+			<os:store doc:name="reset warning sent"
+				doc:id="44eaabc2-cf32-4098-9442-b481cae8d02a"
+				key='#[(vars.currentOrg.organisationId default "") ++ (vars.currentApp.applicationId default "") ++ "-warning-sent"]'
+				objectStore="caducator-object-store">
+				<os:value><![CDATA[#[false as Boolean]]]></os:value>
+			</os:store>
+			<error-handler>
+				<on-error-continue enableNotifications="true"
+					logException="true" doc:name="On Error Continue"
+					doc:id="468c2c3b-79f6-4269-b0f2-e95a78eff1ca">
+					<logger level="INFO" doc:name="log error"
+						doc:id="110de824-0104-4ddf-b93f-789fd8775053"
+						message="could not send email - will continue" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</sub-flow>
+	<sub-flow name="send-warning-for-app"
+		doc:id="560633bb-b27e-4397-abf3-92d541532acc">
+		<logger level="INFO" doc:name="app will expire"
+			doc:id="edf110e1-95ec-4a13-9c24-d86cc97308fb"
+			message="app will expire" />
+		<os:retrieve doc:name="warning already sent"
+			doc:id="ce0c7325-10f9-4d65-b80c-62396cfd1089"
+			key='#[(vars.currentOrg.organisationId default "") ++ (vars.currentApp.applicationId default "") ++ "-warning-sent"]'
+			objectStore="caducator-object-store" target="warningSent">
+			<os:default-value><![CDATA[#[false as Boolean]]]></os:default-value>
+		</os:retrieve>
+		<choice doc:name="Choice"
+			doc:id="ee7b6f24-bfd5-43fc-968a-6507e2c36ca3">
+			<when expression="#[!vars.warningSent]">
+				<logger level="INFO" doc:name="send warning"
+					doc:id="e2e25c2e-af95-417f-97f8-d0ef62b85dc7" message="#[payload]" />
+				<try doc:name="Try"
+					doc:id="d3fc30dc-b343-4afc-bcf8-e4625f612424">
+					<email:send doc:name="Send"
+						doc:id="dc8030b2-a3a0-455d-81b9-801cc7e6bb40"
+						config-ref="Email_SMTP"
+						subject="#[&quot;Application '&quot; ++ vars.currentApp.applicationName ++ &quot;' will expire soon&quot;]" fromAddress="#[vars.currentOrg.contactEmail]">
+						<email:to-addresses>
+							<email:to-address value="#[payload.ownerEmail]" />
+						</email:to-addresses>
+						<email:body contentType="text/html" encoding="UTF-8"
+							contentTransferEncoding="quoted-printable">
+							<email:content><![CDATA[#[output application/java
+---
+"<h1>Application '" ++ vars.currentApp.applicationName ++ "' will expire soon</h1>" ++
+"<p>The application '" ++ (vars.currentApp.applicationName default "") ++ "' will expire soon. Please create a new application
+and update your deployments.</p>" ++
+"<p>The current application contracts will be revoked in " ++ abs(vars.currentApp.expireDiff default 0) ++ " days and credentials will be reset.</p>" ++
+"<p>Thanks for your interest in our APIs</p>"]]]></email:content>
+						</email:body>
+					</email:send>
+					<os:store doc:name="store warning flag"
+						doc:id="d672c06d-1da4-4451-a0cb-8dedaefd6ad5"
+						key='#[(vars.currentOrg.organisationId default "") ++ (vars.currentApp.applicationId default "") ++ "-warning-sent"]'
+						objectStore="caducator-object-store">
+						<os:value><![CDATA[#[true as Boolean]]]></os:value>
+					</os:store>
+					<error-handler>
+						<on-error-continue enableNotifications="true"
+							logException="true" doc:name="On Error Continue"
+							doc:id="1ce50197-0937-4b97-aa78-d115cfdba30b">
+							<logger level="INFO" doc:name="Logger"
+								doc:id="a5271952-726a-4a5e-8a65-a6a1f76bffb9"
+								message="could not send email - will continue" />
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="warning already sent"
+					doc:id="8845ed53-b28d-4e23-9323-f9811f5f78a2"
+					message="warning already sent" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="process-organisation"
+		doc:id="bff6b92e-c8a2-410b-8082-a138ef29a5c2">
+		<flow-ref doc:name="get applications"
+			doc:id="876fbc53-646a-4ce6-9064-1bb5c61f690b" name="get-org-apps" />
+		<foreach doc:name="For Each App"
+			doc:id="2e345902-a190-4ef7-ab31-7c499da0d6ad"
+			collection="#[payload.applications]">
+			<set-variable value="#[payload]"
+				doc:name="store app in var"
+				doc:id="88e22804-2802-41e4-b9e3-3de816056b5e"
+				variableName="application" />
+			<ee:transform doc:name="calculate dates" doc:id="68948ead-3587-4e99-882e-9773155b0ef4" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var createdDate = payload.audit.created.date as DateTime
+var dateNow = now()
+var daysOld = (dateNow - createdDate).days
+var orgConfigDays = vars.currentOrg.expiryDays default 0
+var orgConfigWarnDays = vars.currentOrg.warnDays default 0
+---
+{
+	organisationId: vars.currentOrg.organisationId,
+	applicationId: payload.id,
+	applicationName: payload.name,
+	applicationOwner: (payload.owners[0].firstName default "") ++ " " ++ (payload.owners[0].lastName default ""),
+	ownerEmail: payload.owners[0].email,
+	daysOld: daysOld,
+	expireConf: orgConfigDays,
+	warnConf: orgConfigDays - orgConfigWarnDays,
+	warnDiff: daysOld - (orgConfigDays - orgConfigWarnDays),
+	expireDiff: daysOld - orgConfigDays,
+	appWillExpire: daysOld >= orgConfigDays - orgConfigWarnDays,
+	appHasExpired: daysOld >= orgConfigDays,
+	deleteContracts: vars.currentOrg.deleteContracts
+}
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<set-variable value="#[payload]" doc:name="set app status" doc:id="bcda2ded-3c94-48c1-8bf6-d1519fbe3772" variableName="currentApp" />
+			<logger level="INFO" doc:name="output app info"
+				doc:id="c88ae2ae-edf9-41fb-a565-3f51464b969c" message="#[payload]" />
+			<choice doc:name="check app state"
+				doc:id="b437321f-44ce-43e0-9c2f-a8e710672fff">
+				<when expression="#[vars.currentApp.appHasExpired]">
+					<flow-ref doc:name="invalidate app"
+						doc:id="2eb42ae7-eea3-4d00-b00c-9319a0661bbc" name="invalidate-app" />
+				</when>
+				<when expression="#[vars.currentApp.appWillExpire]">
+					<flow-ref doc:name="send warning"
+						doc:id="37dafcea-85d7-4333-a294-4a17bf0b7d28"
+						name="send-warning-for-app" />
+				</when>
+				<otherwise>
+					<logger level="INFO" doc:name="all is well with this app"
+						doc:id="3ffa733f-7752-45c9-80f0-307555ec6d1e"
+						message="nothing to do" />
+				</otherwise>
+			</choice>
+		</foreach>
+	</sub-flow>
+    <sub-flow name="start" doc:id="2573197f-0088-4957-85b9-3e07dca247b8">
+        <flow-ref doc:name="login" doc:id="d7749c23-1022-49e8-be2c-fc9df2170efa" name="anypoint-apis-loginImpl" />
+        <set-variable value="#[payload.access_token]" doc:name="store token" doc:id="2e2008ac-6850-49a0-9b3a-ae16578cb2f1" variableName="accessToken" />
+		<flow-ref doc:name="fetch config" doc:id="afd17e36-526d-4575-9bee-04f83174eac9" name="get-configs" />
+		<foreach doc:name="for each org config" doc:id="4cbe9fb9-169e-4156-8f71-101cd3d1b334" collection="#[payload.organisations]">
+			<logger level="INFO" doc:name="log config" doc:id="0d2cbafc-d08f-472a-a015-d2914df5083d" message="#[payload]" />
+			<set-variable value="#[payload]" doc:name="set curent org" doc:id="451c7d0b-b5d1-4e8c-b0de-e279488971b2" variableName="currentOrg" />
+			<flow-ref doc:name="process organisation" doc:id="30f4711c-7586-4d2a-a4b4-54a590f293bd" name="process-organisation" />
+		</foreach>
+		<http:request method="DELETE" doc:name="delete token" doc:id="062f3f4a-6eb3-4c74-9d60-d6d26a1a3faf" config-ref="api-platform-http-config" path="#[p(&quot;ap.delete.token.url&quot;)]">
+            <http:body><![CDATA[payload]]></http:body>
+            <http:headers><![CDATA[#[%dw 2.0
+output application/java --- { "key" : "value"}]]]></http:headers>
+            <http:uri-params><![CDATA[#[output application/java
+---
+{
+	"access_token" : vars.accessToken
+}]]]></http:uri-params>
+        </http:request>
+    </sub-flow>
+	<flow name="caducator-ace-caducator-api-main">
+        <http:listener config-ref="caducator-ace-caducator-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="caducator-ace-caducator-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="caducator-ace-caducator-api-console">
+        <http:listener config-ref="caducator-ace-caducator-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="caducator-ace-caducator-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\start:caducator-ace-caducator-api-config">
+        <logger level="INFO" message="get:\start:caducator-ace-caducator-api-config" />
+        <set-payload value="#[%dw 2.0 output application/json --- {  &quot;username&quot;: p('ap.user'),  &quot;password&quot;: p('ap.password') }]" doc:name="set credentials" doc:id="40f67ba0-5965-4321-8068-1a60b3217afe" />
+        <flow-ref doc:name="start" doc:id="b5f62004-bb0e-4596-90ee-0f9f1acc3a82" name="start" />
+    </flow>
+	<flow name="post:\start:application\json:caducator-ace-caducator-api-config">
+        <flow-ref doc:name="start" doc:id="d7f522f5-a9b9-4b90-86f6-13179e798e43" name="start" />
+    </flow>
+	<flow name="delete:\config\(organisation-id):caducator-ace-caducator-api-config">
+        <flow-ref doc:name="delete-config" doc:id="1cfe3e28-007a-45ae-8cb2-b6351cfde7a2" name="delete-config"/>
+    </flow>
+	<flow name="get:\config:caducator-ace-caducator-api-config">
+		<flow-ref doc:name="get-configs" doc:id="830fd1bb-b326-48a9-bd77-70764789d63a" name="get-configs"/>
+    </flow>
+    <flow name="post:\config:application\json:caducator-ace-caducator-api-config">
+		<flow-ref doc:name="create-config" doc:id="e5656855-2b32-4b3d-ab30-b60ee6432770" name="create-config"/>
+    </flow>
+</mule>
